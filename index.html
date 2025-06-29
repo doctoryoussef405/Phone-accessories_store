@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>متجر الوصلات والسماعات</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+  <header class="bg-blue-600 text-white p-4 text-center text-2xl font-bold">
+    متجر الوصلات والسماعات
+  </header>
+
+  <div class="max-w-md mx-auto mt-4 px-4">
+    <input type="text" id="searchInput" placeholder="ابحث عن منتج..." class="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-blue-400" />
+  </div>
+
+  <main class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4" id="product-list"></main>
+
+  <section class="p-4 bg-white shadow mt-6 max-w-md mx-auto rounded">
+    <h2 class="text-xl font-semibold mb-4 border-b pb-2">سلة المشتريات</h2>
+    <ul id="cart" class="space-y-2 text-sm"></ul>
+    <p class="mt-4 font-bold text-right">الإجمالي: <span id="total">0</span> جنيه</p>
+
+    <div class="mt-4 space-y-2">
+      <input type="text" id="customerName" placeholder="الاسم" class="w-full p-2 border rounded" />
+      <input type="text" id="customerAddress" placeholder="العنوان بالتفصيل" class="w-full p-2 border rounded" />
+      <input type="tel" id="customerPhone" placeholder="رقم التليفون" class="w-full p-2 border rounded" />
+    </div>
+
+    <button id="checkoutBtn" class="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+      شراء الآن عبر واتساب
+    </button>
+  </section>
+
+  <script>
+    const products = [
+      { id: 1, name: "وصلة شاحن iPhone", price: 75, image: "https://via.placeholder.com/150" },
+      { id: 2, name: "وصلة Type-C أصلية", price: 60, image: "https://via.placeholder.com/150" },
+      { id: 3, name: "سماعة بلوتوث", price: 120, image: "https://via.placeholder.com/150" },
+    ];
+
+    const productList = document.getElementById("product-list");
+    const cartList = document.getElementById("cart");
+    const totalDisplay = document.getElementById("total");
+    const checkoutBtn = document.getElementById("checkoutBtn");
+    const searchInput = document.getElementById("searchInput");
+
+    const nameInput = document.getElementById("customerName");
+    const addressInput = document.getElementById("customerAddress");
+    const phoneInput = document.getElementById("customerPhone");
+
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    let total = cart.reduce((sum, item) => sum + item.price, 0);
+    totalDisplay.textContent = total;
+
+    function renderCart() {
+      cartList.innerHTML = "";
+      cart.forEach((product, index) => {
+        const li = document.createElement("li");
+        li.className = "flex justify-between items-center bg-gray-50 p-2 rounded";
+        li.innerHTML = `
+          <span>${product.name} - ${product.price} جنيه</span>
+          <button class="text-red-500 text-lg font-bold" onclick="removeItem(${index})">×</button>
+        `;
+        cartList.appendChild(li);
+      });
+      totalDisplay.textContent = total;
+      localStorage.setItem("cart", JSON.stringify(cart));
+    }
+
+    function addToCart(product) {
+      cart.push(product);
+      total += product.price;
+      renderCart();
+    }
+
+    function removeItem(index) {
+      total -= cart[index].price;
+      cart.splice(index, 1);
+      renderCart();
+    }
+
+    function renderProducts(filteredProducts = products) {
+      productList.innerHTML = "";
+      filteredProducts.forEach(product => {
+        const card = document.createElement("div");
+        card.className = "bg-white rounded shadow p-4 text-center";
+        card.innerHTML = `
+          
+<img src="\${product.image}" alt="\${product.name}" class="mx-auto mb-2 w-32 h-32 object-cover">
+<h3 class="text-lg font-semibold">\${product.name}</h3>
+<p class="text-blue-600 font-bold">\${product.price} جنيه</p>
+<label class="block my-2 text-sm text-gray-700">الكمية:
+  <select class="quantity-selector border rounded px-2 py-1 ml-2">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+  </select>
+</label>
+<button class="add-to-cart mt-2 bg-blue-500 text-white px-4 py-1 rounded">أضف للسلة</button>
+
+        `;
+        const button = card.querySelector(".add-to-cart");
+        button.addEventListener("click", () => addToCart(product));
+        productList.appendChild(card);
+      });
+    }
+
+    checkoutBtn.addEventListener("click", () => {
+      if (cart.length === 0) return alert("السلة فارغة.");
+      const name = nameInput.value.trim();
+      const address = addressInput.value.trim();
+      const phone = phoneInput.value.trim();
+      if (!name || !address || !phone) return alert("يرجى ملء جميع البيانات.");
+
+      let message = `🛍️ طلب جديد من المتجر:
+`;
+      cart.forEach((item, i) => {
+        message += `${i + 1}- ${item.name} - ${item.price} جنيه\n`;
+      });
+      message += `\n📦 الإجمالي: ${total} جنيه\n`;
+      message += `\n👤 الاسم: ${name}\n📍 العنوان: ${address}\n📞 الهاتف: ${phone}`;
+
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappNumber = "201142197642";
+      const url = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+      window.open(url, "_blank");
+    });
+
+    searchInput.addEventListener("input", (e) => {
+      const query = e.target.value.trim().toLowerCase();
+      const filtered = products.filter(product =>
+        product.name.toLowerCase().includes(query)
+      );
+      renderProducts(filtered);
+    });
+
+    renderProducts();
+    renderCart();
+  </script>
+
+</body>
+</html>
